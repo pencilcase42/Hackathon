@@ -1,33 +1,44 @@
 // src/app/page.js
-"use client"; // Important: This makes it a Client Component
+"use client";
 
 import { useState } from 'react';
 
 export default function Home() {
-  // State to track whether papers have been retrieved
+  const [papers, setPapers] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [showPapers, setShowPapers] = useState(false);
+  const [topic, setTopic] = useState('ai');
+  const [timeFrame, setTimeFrame] = useState(10);
   
-  // Project data
-  const tiles = [
-    { id: 1, title: "Paper One", author: "John Doe", date: "2024-01-01", tags: ["tag1", "tag2"], summary: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris." },
-    { id: 2, title: "Paper Two", author: "Jane Smith", date: "2024-01-02", tags: ["tag3", "tag4"], summary: "Fusce convallis metus id felis luctus adipiscing. Pellentesque egestas, neque sit amet convallis pulvinar." },
-    { id: 3, title: "Paper Three", author: "John Doe", date: "2024-01-03", tags: ["tag5", "tag6"], summary: "Sed lectus. Donec mollis hendrerit risus. Phasellus nec sem in justo pellentesque facilisis." },
-    { id: 4, title: "Paper Four", author: "Jane Smith", date: "2024-01-04", tags: ["tag7", "tag8"], summary: "Proin sapien ipsum, porta a, auctor quis, euismod ut, mi. Aenean viverra rhoncus pede." },
-    { id: 5, title: "Paper Five", author: "John Doe", date: "2024-01-05", tags: ["tag9", "tag10"], summary: "Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo." },
-    { id: 6, title: "Paper Six", author: "Jane Smith", date: "2024-01-06", tags: ["tag11", "tag12"], summary: "Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna." },
-  ];
-
-  // Function to formate date using fixed locale to avoid hydration errors
+  // Function to format date
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-UK', options);
+    return new Date(dateString).toLocaleDateString('en-US', options);
   };
   
-
   // Function to handle button click
-  const handleRetrievePapers = () => {
-    // In a real app, you might fetch data from an API here
-    setShowPapers(true);
+  const handleRetrievePapers = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Call the API route with parameters
+      const response = await fetch(`/api/retrieve-papers?topic=${encodeURIComponent(topic)}&timeFrame=${timeFrame}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setPapers(data.papers);
+        setShowPapers(true);
+      } else {
+        setError(data.error || 'Failed to retrieve papers');
+      }
+    } catch (err) {
+      setError('An error occurred while retrieving papers');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -37,32 +48,65 @@ export default function Home() {
       {!showPapers ? (
         <div className="empty-state">
           <p>No papers are currently displayed.</p>
+          
+          <div className="search-controls">
+            <div className="input-group">
+              <label htmlFor="topic">Topic:</label>
+              <input 
+                type="text" 
+                id="topic" 
+                value={topic} 
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="e.g., artificial intelligence"
+              />
+            </div>
+            
+            <div className="input-group">
+              <label htmlFor="timeFrame">Time Frame (days):</label>
+              <input 
+                type="number" 
+                id="timeFrame" 
+                value={timeFrame} 
+                onChange={(e) => setTimeFrame(e.target.value)}
+                min="1" 
+                max="365"
+              />
+            </div>
+          </div>
+          
           <button 
             className="retrieve-button"
             onClick={handleRetrievePapers}
+            disabled={isLoading}
           >
-            Retrieve Latest Papers
+            {isLoading ? 'Retrieving...' : 'Retrieve Latest Papers'}
           </button>
+          
+          {error && <p className="error-message">{error}</p>}
         </div>
       ) : (
         <div className="stack">
-          {tiles.map((tile) => (
-            <div key={tile.id} className="card">
-              <div className="card-header">
-                <h2 className="card-title">{tile.title}</h2>
-                <div className="card-meta">
-                  <span className="author">By {tile.author}</span>
-                  <span className="date">{formatDate(tile.date)}</span>
+          {papers.length > 0 ? (
+            papers.map((paper) => (
+              <div key={paper.id} className="card">
+                <div className="card-header">
+                  <h2 className="card-title">{paper.title}</h2>
+                  <div className="card-meta">
+                    <span className="author">By {paper.author}</span>
+                    <span className="date">{formatDate(paper.date)}</span>
+                  </div>
+                </div>
+                <p className="summary">{paper.summary}</p>
+                <div className="tags">
+                  {paper.tags.map((tag, index) => (
+                    <span key={index} className="tag">{tag}</span>
+                  ))}
                 </div>
               </div>
-              <p className="summary">{tile.summary}</p>
-              <div className="tags">
-                {tile.tags.map((tag, index) => (
-                  <span key={index} className="tag">{tag}</span>
-                ))}
-              </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="no-results">No papers found matching your criteria.</p>
+          )}
         </div>
       )}
     </main>
