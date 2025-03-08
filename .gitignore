@@ -2,3 +2,4 @@
 data/journal/WiredTigerPreplog.0000000004
 .env
 /agent/
+.venv/
