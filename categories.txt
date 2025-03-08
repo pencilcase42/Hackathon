@@ -1,0 +1,71 @@
+Computer Science (cs):
+  cs.AI - Artificial Intelligence
+  cs.LG - Machine Learning
+  cs.CV - Computer Vision and Pattern Recognition
+  cs.NE - Neural and Evolutionary Computing
+  cs.CL - Computation and Language
+  cs.DS - Discrete Mathematics
+  cs.HC - Human-Computer Interaction
+  cs.MS - Mathematical Software
+  cs.SE - Software Engineering
+
+Physics (physics):
+  physics.astro-ph - Astrophysics
+  physics.gr-qc - General Relativity and Quantum Cosmology
+  physics.cond-mat - Condensed Matter
+  physics.optics - Optics
+  physics.plasm-ph - Plasma Physics
+  physics.stat-ph - Statistical Physics
+
+Mathematics (math):
+  math.AG - Algebraic Geometry
+  math.AP - Analysis of Partial Differential Equations
+  math.CO - Combinatorics
+  math.DG - Differential Geometry
+  math.NT - Number Theory
+  math.OC - Optimization and Control
+  math.ST - Statistics Theory
+
+Quantitative Biology (q-bio):
+  q-bio.BM - Biological Materials
+  q-bio.CB - Cell Behavior
+  q-bio.GN - Genomics
+  q-bio.MN - Molecular Networks
+  q-bio.PE - Populations and Evolution
+  q-bio.QM - Quantitative Methods
+
+Quantitative Finance (q-fin):
+  q-fin.CP - Computational Finance
+  q-fin.EC - Economics
+  q-fin.MF - Mathematical Finance
+  q-fin.PM - Portfolio Management
+  q-fin.ST - Statistical Finance
+
+Statistics (stat):
+  stat.AP - Applications
+  stat.CO - Computation
+  stat.ML - Machine Learning
+  stat.ME - Methodology
+  stat.TH - Theory
+
+Electrical Engineering and Systems Science (eess):
+  eess.AS - Audio and Speech Processing
+  eess.IV - Image and Video Processing
+  eess.SP - Signal Processing
+  eess.SY - Systems and Control
+
+Economics (econ):
+  econ.GN - General Economics
+  econ.TH - Theoretical Economics
+
+Engineering (egr):
+  egr.AERO - Aerospace Engineering
+  egr.BME - Biomedical Engineering
+  egr.CIVIL - Civil Engineering
+  egr.ELEC - Electrical Engineering
+  egr.MECH - Mechanical Engineering
+
+Other fields:
+  qcs - Quantum Computing
+  cs.IT - Information Theory
+  math.LO - Logic
