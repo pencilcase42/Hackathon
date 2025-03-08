@@ -1,13 +1,14 @@
 import os
 from db_init import init_db
 from arxiv_api_modified import getPDFs
+from pdf_summary import download_file
 
 if __name__ == "__main__":
     db = init_db()
     papers = getPDFs()
-    for paper in papers:
-        db.insert(paper)
-    
-    print(db.get_all_papers()[1])
+    summary = download_file(papers[0]['link'])
+    papers[0]['summary'] = summary
+    print(papers[0])
+
     
     
