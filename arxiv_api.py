@@ -13,7 +13,7 @@ def getPDFs(topic = 'ai',time_frame = 10,test=False):
     search_query = topic.replace(" ","_")
     #id_list = ''
     start = 0
-    max_results = 1
+    max_results = 10
 
     prefix = 'all'
     # prefix = 'ti'
@@ -97,7 +97,7 @@ def getPDFs(topic = 'ai',time_frame = 10,test=False):
         output['abstract'] = entry.summary
         
         with open(f"{folder}\{output['arxiv_id']}.json", "w") as outfile:
-            json.dump(output, outfile)
+            json.dump(output, outfile, indent=4)
             if test:
                 print("saved")
 
