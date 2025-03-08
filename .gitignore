@@ -3,3 +3,5 @@ data/journal/WiredTigerPreplog.0000000004
 .env
 /agent/
 .venv/
+client/scripts/__pycache__/db_init.cpython-312.pyc
+client/scripts/__pycache__/arxiv_api_modified.cpython-312.pyc

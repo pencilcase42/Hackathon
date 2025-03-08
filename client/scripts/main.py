@@ -8,5 +8,6 @@ if __name__ == "__main__":
     for paper in papers:
         db.insert(paper)
     
+    print(db.get_all_papers()[1])
     
     

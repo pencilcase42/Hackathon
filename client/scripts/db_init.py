@@ -11,6 +11,7 @@ class DB:
         self.uri = os.getenv("DB_URI", "mongodb://localhost:27017/")
         self.client = MongoClient(self.uri)
         self.db = self.client[self.db_name]
+        self.collection = self.db["papers"]
         print(f"Connected to MongoDB database: '{self.db_name}' at URI: '{self.uri}'")
 
     def clear_database(self):
@@ -25,6 +26,15 @@ class DB:
         except errors.PyMongoError as e:
             print(f"Error inserting paper: {e}")
             return None
+        
+    def get_all_papers(self):
+        try:
+            papers = list(self.collection.find())
+            return papers
+        except errors.PyMongoError as e:
+            print(f"Error retrieving papers: {e}")
+            return []
+        
 def init_db():
     # Initialize the database
     arxiv_db = DB()

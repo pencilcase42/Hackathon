@@ -47,13 +47,20 @@ def getPDFs(topic='ai', time_frame=10, test=False):
                 'author': ", ".join(author.name for author in entry.authors) if hasattr(entry, 'authors') else "Unknown",
                 'date': entry.published.split('T')[0],  # Format as YYYY-MM-DD
                 'tags': [t['term'] for t in entry.tags],
-                'summary': entry.summary
+                'summary': entry.summary,
             }
+
+            for link in entry.links:
+                if link.rel == 'alternate':
+                    paper['abs_link'] = link.href
+                elif link.title == 'pdf':
+                    paper['link'] = link.href
             
             papers.append(paper)
         
         # Output the papers as JSON to stdout
-        print(json.dumps(papers))
+        # print(json.dumps(papers))
+        return papers
         
     except Exception as e:
         # If any error occurs, return an error object
@@ -63,17 +70,17 @@ def getPDFs(topic='ai', time_frame=10, test=False):
             print(f"Error: {str(e)}", file=sys.stderr)
         sys.exit(1)
 
-# If the script is run directly, use default parameters
-if __name__ == "__main__":
-    # Check if arguments were provided
-    if len(sys.argv) > 1:
-        topic = sys.argv[1]
-    else:
-        topic = 'ai'
+# # If the script is run directly, use default parameters
+# if __name__ == "__main__":
+#     # Check if arguments were provided
+#     if len(sys.argv) > 1:
+#         topic = sys.argv[1]
+#     else:
+#         topic = 'ai'
         
-    if len(sys.argv) > 2:
-        time_frame = int(sys.argv[2])
-    else:
-        time_frame = 10
+#     if len(sys.argv) > 2:
+#         time_frame = int(sys.argv[2])
+#     else:
+#         time_frame = 10
         
-    getPDFs(topic=topic, time_frame=time_frame, test=True)
+#     getPDFs(topic=topic, time_frame=time_frame, test=True)
