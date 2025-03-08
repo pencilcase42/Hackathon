@@ -9,7 +9,7 @@ def getPDFs(topic='ai', time_frame=10, test=False):
         # Topic will be search query 
         search_query = topic.replace(" ", "_")
         start = 0
-        max_results = 10
+        max_results = 5
         prefix = 'all'
         
         today = datetime.today()

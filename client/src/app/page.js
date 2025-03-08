@@ -13,8 +13,12 @@ export default function Home() {
   
   // Function to format date
   const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
+    try {
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString('en-US', options);
+    } catch (e) {
+      return dateString || 'Unknown date';
+    }
   };
   
   // Function to handle button click
@@ -23,12 +27,12 @@ export default function Home() {
     setError(null);
     
     try {
-      // Call the API route with parameters
+      // Call the API route with parameters (even though they're not used by main.py currently)
       const response = await fetch(`/api/retrieve-papers?topic=${encodeURIComponent(topic)}&timeFrame=${timeFrame}`);
       const data = await response.json();
       
       if (response.ok) {
-        setPapers(data.papers);
+        setPapers(data.papers || []);
         setShowPapers(true);
       } else {
         setError(data.error || 'Failed to retrieve papers');
@@ -39,6 +43,11 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Function to get back to search
+  const handleBackToSearch = () => {
+    setShowPapers(false);
   };
 
   return (
@@ -86,26 +95,35 @@ export default function Home() {
         </div>
       ) : (
         <div className="stack">
+          <button 
+            className="back-button"
+            onClick={handleBackToSearch}
+          >
+            Back to Search
+          </button>
+          
           {papers.length > 0 ? (
-            papers.map((paper) => (
-              <div key={paper.id} className="card">
+            papers.map((paper, index) => (
+              <div key={paper.id || paper._id || index} className="card">
                 <div className="card-header">
                   <h2 className="card-title">{paper.title}</h2>
                   <div className="card-meta">
-                    <span className="author">By {paper.author}</span>
-                    <span className="date">{formatDate(paper.date)}</span>
+                    <span className="author">By {paper.author || 'Unknown'}</span>
+                    {paper.date && <span className="date">{formatDate(paper.date)}</span>}
                   </div>
                 </div>
-                <p className="summary">{paper.summary}</p>
-                <div className="tags">
-                  {paper.tags.map((tag, index) => (
-                    <span key={index} className="tag">{tag}</span>
-                  ))}
-                </div>
+                <p className="summary">{paper.summary || 'No summary available'}</p>
+                {paper.tags && paper.tags.length > 0 && (
+                  <div className="tags">
+                    {paper.tags.map((tag, idx) => (
+                      <span key={idx} className="tag">{tag}</span>
+                    ))}
+                  </div>
+                )}
               </div>
             ))
           ) : (
-            <p className="no-results">No papers found matching your criteria.</p>
+            <p className="no-results">No papers found in the database.</p>
           )}
         </div>
       )}

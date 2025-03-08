@@ -59,7 +59,7 @@ def pdf_summary(file_id):
     message = openai.beta.threads.messages.create(
         thread_id=thread_id,
         role="user",
-        content="Summarize the key points from this PDF in 500 words or less.",
+        content="Summarize the key points from this PDF in 100 words or less. Please provide your answer in plain text with no markdown.",
         attachments=[
         {
             "file_id": file_id,
