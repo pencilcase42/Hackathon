@@ -3,35 +3,41 @@ import openai
 import time
 import requests
 import tempfile
+import os
 
-
-file_path = "/Users/ahmadkitchlew/Documents/Computing/Hackathon_AI_Agents/Hackathon/Testing_openai_API/2503.04218v1.pdf"
 def download_file(url):
-    
+    # Create a temporary file using the OS module
+    temp_filename = "temp_downloaded_file.pdf"  # Temporary filename
 
-    # Create a temporary file
-    with tempfile.NamedTemporaryFile(delete=True) as temp_file:
+    try:
         # Download the file
         response = requests.get(url)
         response.raise_for_status()  # Ensure request was successful
 
-        # Write content to temporary file
-        temp_file.write(response.content)
-        temp_file.flush()  # Ensure data is written to disk
+        # Write the content to a file
+        with open(temp_filename, "wb") as temp_file:
+            temp_file.write(response.content)
 
-        print(f"Temporary file created at: {temp_file.name}")
+        print(f"Temporary file created at: {temp_filename}")
 
-        # Now you can process the file (e.g., read it)
-        with open(file_path, "rb") as file:
-            response = openai.files.create(
+        # Upload the file to OpenAI
+        with open(temp_filename, "rb") as file:
+            upload_response = openai.files.create(
                 file=file,
                 purpose="assistants"
             )
 
-        file_id = response.id
+        file_id = upload_response.id
         print(f"Uploaded file ID: {file_id}")
-        return pdf_summary(file_id)
 
+    finally:
+        # Delete the temporary file after upload
+        if os.path.exists(temp_filename):
+            os.remove(temp_filename)
+            print(f"Temporary file {temp_filename} deleted.")
+
+    # Return the file_id for further processing
+    return pdf_summary(file_id)
 
 def pdf_summary(file_id):
 
