@@ -1,8 +1,6 @@
-
 import openai
 import time
 import requests
-import tempfile
 import os
 
 def download_file(url):
@@ -38,6 +36,7 @@ def download_file(url):
 
     # Return the file_id for further processing
     return pdf_summary(file_id)
+
 
 def pdf_summary(file_id):
 

@@ -8,7 +8,7 @@ if __name__ == "__main__":
     papers = getPDFs()
     summary = download_file(papers[0]['link'])
     papers[0]['summary'] = summary
-    print(papers[0])
-
+    db.insert(papers[0])
+    print(db.get_all_papers())
     
     
