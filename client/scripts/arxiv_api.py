@@ -7,18 +7,15 @@ import os
 import shutil
 
 
-def getPDFs(topic = 'ai',time_frame = 10,test=False):
-    #Topic will be search query 
-    #subroutine will return all files in specified time_frame 
-    search_query = topic.replace(" ","_")
+def getPDFs(keywords = ['ai'], tags = ['cs.SE'], time_frame = 10,test=False):
+    
+    keywords = ['all:' + word for word in keywords]
+    tags = ['cat:' + tag for tag in tags]
+    search_query = '%28' + '+OR+'.join(keywords + tags) + '%29'
     #id_list = ''
     start = 0
     max_results = 10
 
-    prefix = 'all'
-    # prefix = 'ti'
-    # prefix = 'cat'
-    
     today = datetime.today()
     today_str = today.strftime('%Y%m%d%H%M')
     
@@ -27,7 +24,7 @@ def getPDFs(topic = 'ai',time_frame = 10,test=False):
     
     daterange = f"{search_start_date_str}+TO+{today_str}"
     
-    with libreq.urlopen(f'http://export.arxiv.org/api/query?search_query={prefix}:{search_query}+AND+submittedDate:[{daterange}]&start={start}&max_results={max_results}') as url:
+    with libreq.urlopen(f'http://export.arxiv.org/api/query?search_query={search_query}+AND+submittedDate:[{daterange}]&start={start}&max_results={max_results}') as url:
       r = url.read()
     feed = feedparser.parse(r)
 

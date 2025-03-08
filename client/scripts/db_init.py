@@ -1,4 +1,4 @@
-from pymongo import MongoClient
+from pymongo import MongoClient, errors
 from dotenv import load_dotenv
 import os
 
@@ -16,9 +16,18 @@ class DB:
     def clear_database(self):
         self.client.drop_database(self.db_name)
         print(f"Database '{self.db_name}' has been cleared.")
-
-if __name__ == "__main__":
+        
+    def insert(self,paper):
+        try:
+            result = self.collection.insert_one(paper)
+            print(f"Inserted paper with _id: {result.inserted_id}")
+            return result.inserted_id
+        except errors.PyMongoError as e:
+            print(f"Error inserting paper: {e}")
+            return None
+def init_db():
     # Initialize the database
     arxiv_db = DB()
     # Clear the database (use with caution)
     arxiv_db.clear_database()
+    return arxiv_db
