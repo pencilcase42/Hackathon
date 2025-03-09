@@ -16,22 +16,14 @@ def getPDFs(inputs, daterange, sortby = 'relevance', sortorder = 'descending', t
     search_query = '%28' + '+AND+'.join(inputs) + '%29'
     start = 0
     max_results = 10
-
-    # today = datetime.datetime.today()
-    # today_str = today.strftime('%Y%m%d%H%M')
-    # search_start_date = today - timedelta(days=time_frame)
-    # search_start_date_str = search_start_date.strftime('%Y%m%d') + '0000'
-    # daterange = f'{search_start_date_str}+TO+{today_str}'
     
     base_url = 'http://export.arxiv.org/api/query?'
 
-    query_string = (
-    f"search_query={search_query}+AND+submittedDate:{daterange}"
-    f"&start={start}&max_results={max_results}&sortBy={sortby}&sortOrder={sortorder}"
-)
+    query_string = f"search_query={search_query}+AND+submittedDate:[{daterange[0]}]&start={start}&max_results={max_results}&sortBy={sortby}&sortOrder={sortorder}"
+
     
     full_url = base_url + query_string 
-
+    print(full_url, file=sys.stderr)
     with libreq.urlopen(full_url) as url:
         r = url.read()
     feed = feedparser.parse(r)
@@ -67,17 +59,7 @@ def getPDFs(inputs, daterange, sortby = 'relevance', sortorder = 'descending', t
     return papers
 
 def web_query_refinement(user_query, previous_conversation=None):
-    """
-    Process a user query for the web interface.
-    
-    Args:
-        user_query: Current user query.
-        previous_conversation: Previous conversation history.
-        
-    Returns:
-        A dict with message, conversation, is_final flag, and search_params if finalized.
-    """
-    # Initialize conversation with system prompt
+
     system_prompt = {
         "role": "system", 
         "content": (
@@ -85,14 +67,14 @@ def web_query_refinement(user_query, previous_conversation=None):
             You are a research assistant helping a user refine their query, and ultimately extracting parameters from their query in JSON format. Adhere to the following steps and rules:
 
             1. **First User Query**:
-            - Ask a clarifying question. Encourage the user to provide more detail about their research interest, suggest possible extensions to their query, or any relevant date range.
+            - Ask a clarifying question. Encourage the user to provide more detail about their research interest, definitely possible extensions to their query, to help them make the search more specific.
             - If the user has not specified a date range, prompt them for it - they do not need to specify both ends of the date range - if the user says something like 'over the last year' then that means from the present date to one year back, and does not need further clarification.
 
             2. **Subsequent Responses**:
             - Always begin with `Suggested Query: "<sentence>"`.
                 - This should be a natural-language sentence that concisely reflects the user’s latest intent.
                 - For example: `Suggested Query: "I want to find the latest machine learning methods for image classification."`
-            - After providing the suggested query, feel free to ask any clarifying questions you need.
+            - After providing the suggested query, feel free to ask any clarifying questions you need - make sure to give actual examples of areas that user might want to explore.
             - End each response with an offer to finalize, e.g., “If you are satisfied with the current search query, I can proceed with the search.”
 
             3. **Final Response**:
@@ -122,9 +104,7 @@ def web_query_refinement(user_query, previous_conversation=None):
         )
     }
     
-    # Build the conversation history
     if previous_conversation and len(previous_conversation) > 0:
-        # Use the existing conversation; ensure it starts with the system prompt
         if previous_conversation[0].get("role") != "system":
             messages = [system_prompt] + previous_conversation
         else:
@@ -146,11 +126,10 @@ def web_query_refinement(user_query, previous_conversation=None):
     assistant_reply = response.choices[0].message.content.strip()
     updated_conversation = messages + [{"role": "assistant", "content": assistant_reply}]
     
-    # Try to parse the assistant's reply as JSON
     try:
         final_output = json.loads(assistant_reply)
         if isinstance(final_output, dict) and "keywords" in final_output and "date" in final_output:
-            # Valid final JSON output found; process it as final search parameters.
+
             search_params_formatted = {
                 "keywords": final_output["keywords"],
                 "date": final_output["date"]
@@ -162,10 +141,10 @@ def web_query_refinement(user_query, previous_conversation=None):
                 "message": "I'll search for papers based on your refined query."
             }
     except json.JSONDecodeError:
-        # The assistant's reply is not valid JSON; continue the conversation.
+        # The assistant's reply is not valid JSON so continue the convo
         pass
     
-    # Not final, return conversation for further refinement.
+    # keep going with convo
     return {
         "is_final": False,
         "conversation": updated_conversation,
