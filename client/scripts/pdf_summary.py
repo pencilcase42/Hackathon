@@ -60,7 +60,7 @@ def pdf_summary(file_id):
     message = openai.beta.threads.messages.create(
         thread_id=thread_id,
         role="user",
-        content="Summarize the key points from this PDF in 100 words or less. Please provide your answer in plain text with no markdown.",
+        content="Summarize the key points from this paper in 100 words or less. Please provide your answer in plain text with no markdown and with no source.",
         attachments=[
         {
             "file_id": file_id,
@@ -82,13 +82,13 @@ def pdf_summary(file_id):
         
         if run_status.status == "completed":
             messages = openai.beta.threads.messages.list(thread_id=thread_id)
-            
-            # Collect all messages into a single string
-            assistant_response = "\n".join(msg.content[0].text.value for msg in messages.data)
 
-            # Print the complete response as a single string
+            # Filter only assistant messages
+            assistant_messages = [msg.content[0].text.value for msg in messages.data if msg.role == "assistant"]
+
+            # Combine assistant responses into a single string
+            assistant_response = "\n".join(assistant_messages)
             return assistant_response
-            
 
         print("Waiting for response...", file=sys.stderr)
-        time.sleep(2)  # Prevent spamming the API
+        time.sleep(2) 
