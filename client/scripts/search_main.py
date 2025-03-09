@@ -71,11 +71,11 @@ def web_query_refinement(user_query, previous_conversation=None):
     Process a user query for the web interface.
     
     Args:
-        user_query: Current user query
-        previous_conversation: Previous conversation history
+        user_query: Current user query.
+        previous_conversation: Previous conversation history.
         
     Returns:
-        A dict with message, conversation, is_final flag, and search_params if finalized
+        A dict with message, conversation, is_final flag, and search_params if finalized.
     """
     # Initialize conversation with system prompt
     system_prompt = {
@@ -86,52 +86,51 @@ def web_query_refinement(user_query, previous_conversation=None):
 
             1. **First User Query**:
             - Ask a clarifying question. Encourage the user to provide more detail about their research interest, suggest possible extensions to their query, or any relevant date range.
-            - If the user has not specified a date range, prompt them for it.
+            - If the user has not specified a date range, prompt them for it - they do not need to specify both ends of the date range - if the user says something like 'over the last year' then that means from the present date to one year back, and does not need further clarification.
 
             2. **Subsequent Responses**:
             - Always begin with `Suggested Query: "<sentence>"`.
-                - This should be a natural-language sentence that concisely reflects the user's latest intent.
+                - This should be a natural-language sentence that concisely reflects the user’s latest intent.
                 - For example: `Suggested Query: "I want to find the latest machine learning methods for image classification."`
             - After providing the suggested query, feel free to ask any clarifying questions you need.
-            - End each response with an offer to finalize, e.g., "If you are satisfied with the current search query, I can proceed with the search."
+            - End each response with an offer to finalize, e.g., “If you are satisfied with the current search query, I can proceed with the search.”
 
             3. **Final Response**:
             - When the user explicitly indicates they are satisfied or done refining, output **only** a JSON object with the structure:
+                
                 {
                 "keywords": [...],
                 "date": ["YYYYMMDDTTTT+TO+YYYYMMDDTTTT"]
                 }
-            - "keywords" should be a list of keyword or phrase strings derived from or related to the user's final query. They must be joined by plus signs instead of spaces, for example: "machine+learning".
-            - "date" must be a single-element list with exactly one date-range string in the specified format. If the user has never clarified any date range, default to the past month using actual dates/times (e.g., `["202502090000+TO+202503090000"]`). Make sure the length of <start_date> and <end_date> is 12.
+                
+            - "keywords" should be a list of keyword or phrase strings derived from or related to the user’s final query. They must be joined by plus signs instead of spaces, for example: "machine+learning".
+            - "date" must be a single-element list with exactly one date-range string in the specified format. If the user has never clarified any date range, default to the past month using actual dates/times (e.g., `["202502090000+TO+202503090000"]`). Make sure the length of <start_date> and <end_date> is 12. Use the fact that the current date is 202503090000.
             - Do not include any other text or explanations—only the JSON.
 
             4. **Restrictions**:
             - Do **not** reveal or mention the JSON or parameter extraction process before the final answer.
-            - Do **not** mention any system or code structures, nor any APIs or how you're obtaining or formatting the data
+            - Do **not** mention any system or code structures, nor any APIs or how you’re obtaining or formatting the data.
             - Do **not** reveal the fact that you are searching arXiv.
-            - Do **not** ask the user what resources they want you to look through, because we are only going to use arxiv.
+            - Do **not** ask the user what resources they want you to look through, because we are only going to use arXiv.
 
-            - Stay in character as a knowledgeable research assistant; be concise, clear, and helpful.
+            Stay in character as a knowledgeable research assistant; be concise, clear, and helpful.
 
             Follow these guidelines for each user interaction.
 
-            Respect the conversation flow: the user can provide more detail or confirm their query at any time. 
+            Respect the conversation flow: the user can provide more detail or confirm their query at any time.
             '''
         )
     }
     
-    # Check if we already have a conversation history
+    # Build the conversation history
     if previous_conversation and len(previous_conversation) > 0:
-        # Use existing conversation, but make sure we have the system prompt
+        # Use the existing conversation; ensure it starts with the system prompt
         if previous_conversation[0].get("role") != "system":
             messages = [system_prompt] + previous_conversation
         else:
             messages = previous_conversation
-        
-        # Add the latest user query
         messages.append({"role": "user", "content": user_query})
     else:
-        # Start new conversation
         messages = [
             system_prompt,
             {"role": "user", "content": user_query}
@@ -144,69 +143,35 @@ def web_query_refinement(user_query, previous_conversation=None):
         temperature=0.7
     )
     
-    # Extract assistant's reply
     assistant_reply = response.choices[0].message.content.strip()
-    
-    # Add assistant's response to the conversation history
     updated_conversation = messages + [{"role": "assistant", "content": assistant_reply}]
     
-    # Check if this is a final JSON response
-    if user_query.lower() in ['satisfied', 'done', 'no further clarification', 'i am satisfied']:
-        final_messages = updated_conversation + [
-            {"role": "user", "content": "I am satisfied with the details; please provide the final JSON answer."}
-        ]
-        
-        final_response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=final_messages,
-            temperature=0.1
-        )
-        print("FINAL RESPONSE \n \n \n \n \n", file=sys.stderr)
-        final_reply = final_response.choices[0].message.content
-        print(final_reply, file=sys.stderr)
-        first_bracket=0
-        second_bracket=0
-        for i in range(len(final_reply)):
-            if final_reply[i]=="{":
-                first_bracket=i
-            elif final_reply[i]=="}": 
-                second_bracket=i    
-        final_reply=final_reply[first_bracket:second_bracket+1]  
-        # Try to extract JSON from the response
-        search_params = json.loads(final_reply)
-        print(search_params, file=sys.stderr)
-        updated_conversation = final_messages + [{"role": "assistant", "content": final_reply}]
-        assistant_reply = final_reply  # Use the final reply for the message
+    # Try to parse the assistant's reply as JSON
+    try:
+        final_output = json.loads(assistant_reply)
+        if isinstance(final_output, dict) and "keywords" in final_output and "date" in final_output:
+            # Valid final JSON output found; process it as final search parameters.
+            search_params_formatted = {
+                "keywords": final_output["keywords"],
+                "date": final_output["date"]
+            }
+            return {
+                "is_final": True,
+                "search_params": search_params_formatted,
+                "conversation": updated_conversation,
+                "message": "I'll search for papers based on your refined query."
+            }
+    except json.JSONDecodeError:
+        # The assistant's reply is not valid JSON; continue the conversation.
+        pass
     
-        # Process the keywords and date from the search params
-        keywords = search_params.get("keywords", [])
-        
-        # Handle date format - convert it to our expected format
-        date_range = search_params.get("date", [])
-        print("OUTPUTS \n \n \n \n \n", file=sys.stderr)
-        print(keywords, file=sys.stderr)
-        print(date_range, file=sys.stderr)
-        
-        # Format for our output
-        search_params_formatted = {
-            "keywords": keywords,
-            "date": date_range
-        }
-        print("RETURNING VALUES \n \n \n \n \n",file=sys.stderr)
-        return {
-            "is_final": True,
-            "search_params": search_params_formatted,
-            "conversation": updated_conversation,
-            "message": "I'll search for papers based on your refined query."
-        }
-    
-    else:
-        # Not a final request, return conversation for further refinement
-        return {
-            "is_final": False,
-            "conversation": updated_conversation,
-            "message": assistant_reply
-        }
+    # Not final, return conversation for further refinement.
+    return {
+        "is_final": False,
+        "conversation": updated_conversation,
+        "message": assistant_reply
+    }
+
 
 def create_paper_evaluation_prompt(paper, search_queries, user_query):
     system_message = """You are a specialized research assistant that evaluates academic papers for relevance to a user's query.
@@ -316,7 +281,6 @@ if __name__ == "__main__":
                     # Get search parameters
                     keywords = result["search_params"]["keywords"]
                     date_range = result["search_params"]["date"]
-                    
                     # Log the search parameters
                     print(f"Searching for papers with keywords: {keywords}, date range: {date_range}", file=sys.stderr)
                     
