@@ -9,7 +9,7 @@ def getPDFs(topic='ai', time_frame=10, test=False):
         # Topic will be search query 
         search_query = topic.replace(" ", "_")
         start = 0
-        max_results = 10
+        max_results = 5
         prefix = 'all'
         
         today = datetime.today()
@@ -30,7 +30,7 @@ def getPDFs(topic='ai', time_frame=10, test=False):
         feed = feedparser.parse(r)
         
         if test:
-            # Print out feed information (this will go to stderr)
+            # Print out feed information to stderr
             print(f'Feed title: {feed.feed.title}', file=sys.stderr)
             print(f'Feed last updated: {feed.feed.updated}', file=sys.stderr)
             print(f'totalResults for this query: {feed.feed.opensearch_totalresults}', file=sys.stderr)
@@ -47,7 +47,7 @@ def getPDFs(topic='ai', time_frame=10, test=False):
                 'author': ", ".join(author.name for author in entry.authors) if hasattr(entry, 'authors') else "Unknown",
                 'date': entry.published.split('T')[0],  # Format as YYYY-MM-DD
                 'tags': [t['term'] for t in entry.tags],
-                'summary': entry.summary,
+                'summary': "Waiting for summary, thank you for your patience.",  # Initialize with waiting message
             }
 
             for link in entry.links:
@@ -63,9 +63,9 @@ def getPDFs(topic='ai', time_frame=10, test=False):
         return papers
         
     except Exception as e:
-        # If any error occurs, return an error object
+        # If any error occurs, return an error object to stdout
         error_obj = {"error": str(e)}
-        print(json.dumps(error_obj))
+        print(json.dumps(error_obj), file=sys.stdout)
         if test:
             print(f"Error: {str(e)}", file=sys.stderr)
         sys.exit(1)
