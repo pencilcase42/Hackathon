@@ -92,5 +92,3 @@ def pdf_summary(file_id):
 
         print("Waiting for response...", file=sys.stderr)
         time.sleep(2)  # Prevent spamming the API
-
-
