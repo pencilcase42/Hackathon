@@ -19,7 +19,7 @@ def getPDFs(inputs, daterange, sortby = 'relevance', sortorder = 'descending', t
     
     base_url = 'http://export.arxiv.org/api/query?'
 
-    query_string = f"search_query={search_query}+AND+submittedDate:{daterange}&start={start}&max_results={max_results}&sortBy={sortby}&sortOrder={sortorder}"
+    query_string = f"search_query={search_query}+AND+submittedDate:[{daterange[0]}]&start={start}&max_results={max_results}&sortBy={sortby}&sortOrder={sortorder}"
 
     
     full_url = base_url + query_string 
