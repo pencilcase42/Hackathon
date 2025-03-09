@@ -4,10 +4,11 @@ import feedparser
 import json
 import sys
 
-def getPDFs(topic='ai', time_frame=10, test=False):
+def getPDFs(inputs=['AI', 'Machine Learning', 'Deep Learning', 'Artificial Intelligence'], time_frame=5, test=False):
     try:
         # Topic will be search query 
-        search_query = topic.replace(" ", "_")
+        inputs = ['all:' + '+'.join(input.split(' ')) for input in inputs]
+        search_query = '%28' + '+AND+'.join(inputs) + '%29'
         start = 0
         max_results = 5
         prefix = 'all'
@@ -21,8 +22,8 @@ def getPDFs(topic='ai', time_frame=10, test=False):
         daterange = f"{search_start_date_str}+TO+{today_str}"
         
         # Construct the arXiv API URL
-        arxiv_url = f'http://export.arxiv.org/api/query?search_query={prefix}:{search_query}+AND+submittedDate:[{daterange}]&start={start}&max_results={max_results}'
-        
+        arxiv_url = f'http://export.arxiv.org/api/query?search_query={prefix}:{search_query}&max_results={max_results}&sortBy=submittedDate&sortOrder=descending'
+        print(arxiv_url,file=sys.stderr)
         # Make the request to arXiv
         with libreq.urlopen(arxiv_url) as url:
             r = url.read()

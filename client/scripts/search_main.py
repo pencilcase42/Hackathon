@@ -9,8 +9,8 @@ import urllib.request as libreq
 import urllib.parse
 import feedparser
 import time
-
-
+import matplotlib.pyplot as plt
+import networkx as nx
 def getPDFs(inputs, daterange, sortby = 'relevance', sortorder = 'descending', test=False):
     inputs = ['all:' + '+'.join(input.split(' ')) for input in inputs]
     search_query = '%28' + '+AND+'.join(inputs) + '%29'
@@ -226,6 +226,61 @@ Determine if this paper is relevant to the user's original query. Return your re
         ],
         "response_format": response_format
     }
+def draw_graph(papers):
+    G = nx.MultiGraph()
+    size = []
+    labels = {}
+    n = 1
+    
+    for paper in papers: 
+        G.add_node(paper['title'])
+        size.append(300 * paper['relevance']**0.5)
+        labels[paper['title']] = n
+        n+=1
+        
+        
+    visited = set()
+    weights = []
+    for p1 in papers:
+      for p2 in papers:
+          i = p1['arxiv_id']
+          j = p2['arxiv_id']
+          
+          if i!=j and j+i not in visited:
+            tags1 = set(p1['all_Categories'].split(','))
+            tags2 = set(p2['all_Categories'].split(','))
+            
+            w = len(tags1.intersection(tags2))
+            
+            if w > 0:
+                G.add_edge(p1['title'],p2['title'],weight=w)
+                weights.append(w ** 2)
+            visited.add(i+j)
+            
+
+    options = {
+    "font_size": 11,
+    "node_size": size,
+    "node_color": "white",
+    "edgecolors": "black",
+    "width": weights,
+    "linewidths": 5,
+    "labels":labels
+}
+    
+    fig, ax = plt.subplots(figsize=(12, 12))  # Increase the size of the plot
+    pos = nx.circular_layout(G)  
+    
+    # Draw the graph with node labels
+    nx.draw(G, pos, with_labels=True, ax=ax, **options)
+    
+    
+    plt.axis('off')  # Remove axis for better presentation
+    plt.subplots_adjust(right=0.5)
+    handles = [plt.Line2D([0], [0], color='w', label=f"{num}: {title}") for title,num in labels.items()]
+    plt.legend(handles=handles, loc="center right", title="Node Legend",bbox_to_anchor=(2, 0.5))
+    
+    plt.savefig('../graph.png')
 
 # Check for OpenAI API key
 api_key = os.getenv("OPENAI_API_KEY")
@@ -331,10 +386,13 @@ if __name__ == "__main__":
                 # Extract and parse the evaluation
                 evaluation = json.loads(response.choices[0].message.content)
                 print("Paper ID: ", papers[i]['arxiv_id'])
-                print(f"Relevant? {evaluation["is_relevant"]}")
-                print(f"Relevance Score: {evaluation["relevance_score"]}")
-                print(f"Justification: \n {evaluation["justification"]}\n")
-                print(f"Key Topics Matched: \n {evaluation["key_topics_matched"]}")
+                print(f"Relevant? {evaluation['is_relevant']}")
+                print(f"Relevance Score: {evaluation['relevance_score']}")
+                print(f"Justification: \n {evaluation['justification']}\n")
+                print(f"Key Topics Matched: \n {evaluation['key_topics_matched']}")
+                papers[i]["relevance"] = evaluation["relevance_score"]
+
 
             except Exception as e:
                 print(f"Error calling OpenAI API: {e}", file=sys.stderr)
+        draw_graph(papers)
