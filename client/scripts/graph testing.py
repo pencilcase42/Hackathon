@@ -45,19 +45,16 @@ def draw_graph(papers):
     "labels":labels
 }
     
-    fig, ax = plt.subplots(figsize=(12, 12))  # Increase the size of the plot
+    fig, axs = plt.subplots(2,1,figsize=(12, 12),layout='constrained') 
+    ax=axs[0]
+    ax.set_aspect('equal') 
     pos = nx.circular_layout(G)  
-    
-    # Draw the graph with node labels
     nx.draw(G, pos, with_labels=True, ax=ax, **options)
-    
-    
-    plt.axis('off')  # Remove axis for better presentation
-    plt.subplots_adjust(right=0.5)
+    plt.axis('off')  
     handles = [plt.Line2D([0], [0], color='w', label=f"{num}: {title}") for title,num in labels.items()]
-    plt.legend(handles=handles, loc="center right", title="Node Legend",bbox_to_anchor=(2, 0.5))
+    axs[1].legend(handles=handles, loc="center", title="Relevance Legend", fontsize=14, title_fontsize=16) 
+    plt.savefig('outputs/graph.png') 
     
-    plt.show()
     
 papers = [
     {
