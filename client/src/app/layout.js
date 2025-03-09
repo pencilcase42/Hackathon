@@ -8,7 +8,15 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <div className="app-container">
+          <nav className="main-nav">
+            <a href="/" className="nav-link">News</a>
+            <a href="/search" className="nav-link">Search</a>
+          </nav>
+          <main>{children}</main>
+        </div>
+      </body>
     </html>
   )
 }

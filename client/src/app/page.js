@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 
-export default function Home() {
+export default function NewsPage() {
   const [papers, setPapers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -131,8 +131,8 @@ export default function Home() {
   };
 
   return (
-    <main className="container">
-      <h1 className="title">Research Papers</h1>
+    <div className="container">
+      <h1 className="title">Latest Research Papers</h1>
       
       {!showPapers ? (
         <div className="empty-state">
@@ -217,6 +217,6 @@ export default function Home() {
           )}
         </div>
       )}
-    </main>
+    </div>
   );
 }
