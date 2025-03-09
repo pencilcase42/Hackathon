@@ -15,7 +15,6 @@ def draw_graph(papers):
         labels[paper['title']] = n
         n+=1
         
-        
     visited = set()
     weights = []
     for p1 in papers:
@@ -33,8 +32,7 @@ def draw_graph(papers):
                 G.add_edge(p1['title'],p2['title'],weight=w)
                 weights.append(w ** 2)
             visited.add(i+j)
-            
-
+        
     options = {
     "font_size": 11,
     "node_size": size,
@@ -44,7 +42,7 @@ def draw_graph(papers):
     "linewidths": 5,
     "labels":labels
 }
-    
+
     fig, axs = plt.subplots(2,1,figsize=(12, 12),layout='constrained') 
     ax=axs[0]
     ax.set_aspect('equal') 
@@ -53,7 +51,7 @@ def draw_graph(papers):
     plt.axis('off')  
     handles = [plt.Line2D([0], [0], color='w', label=f"{num}: {title}") for title,num in labels.items()]
     axs[1].legend(handles=handles, loc="center", title="Relevance Legend", fontsize=14, title_fontsize=16) 
-    plt.savefig('outputs/graph.png') 
+    plt.savefig('outputs/graph.png',transparent=True) 
     
     
 papers = [
