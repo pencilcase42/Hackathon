@@ -155,12 +155,11 @@ if __name__ == "__main__":
 
             # Extract and parse the evaluation
             evaluation = json.loads(response.choices[0].message.content)
-
-            # Now you can use evaluation["is_relevant"], evaluation["relevance_score"], etc.
-            #if evaluation["is_relevant"] and evaluation["relevance_score"] >= 7:
-                # Process relevant paper
-            print(response)
-
+            print("Paper ID: ", papers[i]['id'])
+            print(f"Relevant? {evaluation["is_relevant"]}")
+            print(f"Relevance Score: {evaluation["relevance_score"]}")
+            print(f"Justification: \n {evaluation["justification"]}\n")
+            print(f"Key Topics Matched: \n {evaluation["key_topics_matched"]}")
 
         except Exception as e:
             print(f"Error calling OpenAI API: {e}", file=sys.stderr)
