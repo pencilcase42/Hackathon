@@ -4,84 +4,59 @@ import os
 import sys
 
 api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    print("Error: OPENAI_API_KEY environment variable not set.", file=sys.stderr)
+    sys.exit(1)
 
 client = openai.OpenAI(api_key=api_key)
 
-def create_arxiv_query_prompt(user_query):
-    prompt_text = f"""
-A user has just asked the following research question:
+def interactive_query_refinement(initial_query):
 
-"{user_query}"
-
-You are a helpful assistant that extracts relevant information for constructing queries to the arXiv API. A user has provided a research-related query. Your task is to extract the essential keywords from the query and determine a time range in GMT formatted as follows:
-
-[YYYYMMDDTTTT+TO+YYYYMMDDTTTT]
-
-- Keywords: Create a list of keywords that accurately represent the research subject matter. The keywords must be strictly about the research topic and must not include any time-related references. The keywords should also contain information from the user's query itself.
-- Date: Generate a date string following the format where YYYY is the four-digit year, MM is the two-digit month, DD is the two-digit day, and TTTT represents the time in 24-hour format to the minute (HHMM). Use GMT time for this output. The current data is 202503090000.
-
-Your response must be a valid JSON object with exactly two keys: "keywords" (an array of strings) and "date" (a string formatted as specified). Do not include any additional text or commentary.
-
-Example output (do not include comments in your actual response):
-
-{{
-  "keywords": ["transformer+models", "efficiency+improvements"],
-  "date": "202503091200+TO+202503091245"
-}}
-    """
-
-    response_format = {
-        "type": "json_schema",
-        "json_schema": {
-            "name": "arxiv_query",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "keywords": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "List of keywords related to the research subject matter. Must not include any time-related terms."
-                    },
-                    "date": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "A date range formatted as [YYYYMMDDTTTT+TO+YYYYMMDDTTTT] in GMT."
-                    }
-                },
-                "required": ["keywords", "date"],
-                "additionalProperties": False
-            },
-            "strict": True
-        }
-    }
-
-    return {
-        "model": "gpt-4o-mini",
-        "messages": [
-            {"role": "system", "content": "You are an intelligent research assistant."},
-            {"role": "user", "content": prompt_text}
-        ],
-        "response_format": response_format
-    }
+    conversation = [
+        {
+            "role": "system", 
+            "content": (
+                "You are an intelligent research assistant helping refine research queries for an arXiv API. "
+                "Your role is to produce keywords and date for the API, which are specific enough, and are related to the user's query"
+                "You may ask some clarifying questions to gather more detail"
+                "When you have gathered sufficient detail, you may suggest an alternative query to the user and ask if they are satisfied "
+                "Always ask the user if they are satisfied with the current state of the query at the end of every response you give, and if the user indicates they are satisfied, you must output only the final answer in valid JSON format with exactly two keys: "
+                "'keywords' (an array of strings representing research topics, with '+' instead of spaces between words; do not include any time-related terms) and "
+                "'date' (a date range string formatted as [YYYYMMDDTTTT+TO+YYYYMMDDTTTT] in GMT, using '202503090000' as the current date). "
+                "Do not output the final JSON until you are confident that you have enough detail from the user. "
+            )
+        },
+        {"role": "user", "content": initial_query}
+    ]
+    
+    while True:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=conversation,
+            temperature=0.7
+        )
+        agent_reply = response.choices[0].message.content.strip()
+        print("Agent:", agent_reply)
+        
+        try:
+            final_output = json.loads(agent_reply)
+            if isinstance(final_output, dict) and "keywords" in final_output and "date" in final_output:
+                return final_output
+        except json.JSONDecodeError:
+            pass
+        
+        user_response = input("Your response (or type 'satisfied' if you are done): ").strip()
+        # If user signals satisfaction, add a message indicating no further clarification is needed.
+        if user_response.lower() in ['satisfied', 'done', 'no further clarification']:
+            conversation.append({"role": "user", "content": "I am satisfied with the details; please provide the final JSON answer."})
+        else:
+            conversation.append({"role": "user", "content": user_response})
+        
 
 if __name__ == "__main__":
-    if client is None:
-        print("Error: OpenAI client not initialized. Please set OPENAI_API_KEY environment variable.", file=sys.stderr)
-        sys.exit(1)
-
-    user_query = input("Enter your research query: ")
-    prompt_data = create_arxiv_query_prompt(user_query)
-
-    try:
-        response = client.chat.completions.create(**prompt_data)
-
-        output = json.loads(response.choices[0].message.content)
-        print("Extracted Keywords:", output["keywords"])
-        print("Date Range:", output["date"])
-
-    except Exception as e:
-        print(f"Error calling OpenAI API: {e}", file=sys.stderr)
+    user_query = input("Enter your research query: ").strip()
+    refined_output = interactive_query_refinement(user_query)
+    
+    print("\nFinal refined query:")
+    print("Extracted Keywords:", refined_output["keywords"])
+    print("Date Range:", refined_output["date"])
