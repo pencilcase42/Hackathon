@@ -387,11 +387,12 @@ if __name__ == "__main__":
 
                 # Extract and parse the evaluation
                 evaluation = json.loads(response.choices[0].message.content)
-                print("Paper ID: ", papers[i]['arxiv_id'])
-                print(f"Relevant? {evaluation['is_relevant']}")
-                print(f"Relevance Score: {evaluation['relevance_score']}")
-                print(f"Justification: \n {evaluation['justification']}\n")
-                print(f"Key Topics Matched: \n {evaluation['key_topics_matched']}")
+                if evaluation['is_relevant']:
+                    print("Paper ID: ", papers[i]['arxiv_id'])
+                    print(f"Relevant? {evaluation['is_relevant']}")
+                    print(f"Relevance Score: {evaluation['relevance_score']}")
+                    print(f"Justification: \n {evaluation['justification']}\n")
+                    print(f"Key Topics Matched: \n {evaluation['key_topics_matched']}")
                 papers[i]["relevance"] = evaluation["relevance_score"]
 
 
