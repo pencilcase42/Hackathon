@@ -11,6 +11,8 @@ import feedparser
 import time
 import matplotlib.pyplot as plt
 import networkx as nx
+
+
 def getPDFs(inputs, daterange, sortby = 'relevance', sortorder = 'descending', test=False):
     inputs = ['all:' + '+'.join(input.split(' ')) for input in inputs]
     search_query = '%28' + '+AND+'.join(inputs) + '%29'

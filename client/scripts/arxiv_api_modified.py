@@ -4,6 +4,7 @@ import feedparser
 import json
 import sys
 
+
 def getPDFs(inputs=['AI', 'Machine Learning', 'Deep Learning', 'Artificial Intelligence'], time_frame=5, test=False):
     try:
         # Topic will be search query 
@@ -12,18 +13,16 @@ def getPDFs(inputs=['AI', 'Machine Learning', 'Deep Learning', 'Artificial Intel
         start = 0
         max_results = 5
         prefix = 'all'
-        
+
         today = datetime.today()
         today_str = today.strftime('%Y%m%d%H%M')
-        
+
         search_start_date = today - timedelta(days=time_frame)
         search_start_date_str = search_start_date.strftime('%Y%m%d') + '0000'
-        
+
         daterange = f"{search_start_date_str}+TO+{today_str}"
-        
         # Construct the arXiv API URL
-        arxiv_url = f'http://export.arxiv.org/api/query?search_query={prefix}:{search_query}&max_results={max_results}&sortBy=submittedDate&sortOrder=descending'
-        print(arxiv_url,file=sys.stderr)
+        arxiv_url = f'http://export.arxiv.org/api/query?search_query={prefix}:{search_query}&max_results={max_results}&sortBy=submittedDate&sortOrder=descending'        
         # Make the request to arXiv
         with libreq.urlopen(arxiv_url) as url:
             r = url.read()
@@ -31,7 +30,7 @@ def getPDFs(inputs=['AI', 'Machine Learning', 'Deep Learning', 'Artificial Intel
         feed = feedparser.parse(r)
         
         if test:
-            # Print out feed information to stderr
+            # Print out feed information (this will go to stderr)
             print(f'Feed title: {feed.feed.title}', file=sys.stderr)
             print(f'Feed last updated: {feed.feed.updated}', file=sys.stderr)
             print(f'totalResults for this query: {feed.feed.opensearch_totalresults}', file=sys.stderr)
@@ -48,7 +47,7 @@ def getPDFs(inputs=['AI', 'Machine Learning', 'Deep Learning', 'Artificial Intel
                 'author': ", ".join(author.name for author in entry.authors) if hasattr(entry, 'authors') else "Unknown",
                 'date': entry.published.split('T')[0],  # Format as YYYY-MM-DD
                 'tags': [t['term'] for t in entry.tags],
-                'summary': "Waiting for summary, thank you for your patience.",  # Initialize with waiting message
+                'summary': entry.summary,
             }
 
             for link in entry.links:
@@ -64,9 +63,9 @@ def getPDFs(inputs=['AI', 'Machine Learning', 'Deep Learning', 'Artificial Intel
         return papers
         
     except Exception as e:
-        # If any error occurs, return an error object to stdout
+        # If any error occurs, return an error object
         error_obj = {"error": str(e)}
-        print(json.dumps(error_obj), file=sys.stdout)
+        print(json.dumps(error_obj))
         if test:
             print(f"Error: {str(e)}", file=sys.stderr)
         sys.exit(1)
