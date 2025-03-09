@@ -97,12 +97,10 @@ def web_query_refinement(user_query, previous_conversation=None):
 
             3. **Final Response**:
             - When the user explicitly indicates they are satisfied or done refining, output **only** a JSON object with the structure:
-                ```
                 {
                 "keywords": [...],
                 "date": ["YYYYMMDDTTTT+TO+YYYYMMDDTTTT"]
                 }
-                ```
             - "keywords" should be a list of keyword or phrase strings derived from or related to the user's final query. They must be joined by plus signs instead of spaces, for example: "machine+learning".
             - "date" must be a single-element list with exactly one date-range string in the specified format. If the user has never clarified any date range, default to the past month using actual dates/times (e.g., `["202502090000+TO+202503090000"]`). Make sure the length of <start_date> and <end_date> is 12.
             - Do not include any other text or explanations—only the JSON.
@@ -164,10 +162,19 @@ def web_query_refinement(user_query, previous_conversation=None):
             temperature=0.1
         )
         print("FINAL RESPONSE \n \n \n \n \n", file=sys.stderr)
-        final_reply = final_response.choices[0].message.content.strip()
-                
+        final_reply = final_response.choices[0].message.content
+        print(final_reply, file=sys.stderr)
+        first_bracket=0
+        second_bracket=0
+        for i in range(len(final_reply)):
+            if final_reply[i]=="{":
+                first_bracket=i
+            elif final_reply[i]=="}": 
+                second_bracket=i    
+        final_reply=final_reply[first_bracket:second_bracket+1]  
         # Try to extract JSON from the response
         search_params = json.loads(final_reply)
+        print(search_params, file=sys.stderr)
         updated_conversation = final_messages + [{"role": "assistant", "content": final_reply}]
         assistant_reply = final_reply  # Use the final reply for the message
     
@@ -315,7 +322,7 @@ if __name__ == "__main__":
                     
                     # Fetch papers using the refined query
                     found_papers = getPDFs(inputs=keywords, daterange=date_range)
-                    print(found_papers)
+                    print("Papers found:", found_papers, file=sys.stderr)
                     # Convert papers to a simplified format for the frontend
                     simplified_papers = []
                     for paper in found_papers:
