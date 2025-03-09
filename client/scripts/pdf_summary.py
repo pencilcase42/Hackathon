@@ -2,6 +2,7 @@ import openai
 import time
 import requests
 import os
+import sys
 
 def download_file(url):
     # Create a temporary file using the OS module
@@ -16,7 +17,7 @@ def download_file(url):
         with open(temp_filename, "wb") as temp_file:
             temp_file.write(response.content)
 
-        print(f"Temporary file created at: {temp_filename}")
+        print(f"Temporary file created at: {temp_filename}", file=sys.stderr)
 
         # Upload the file to OpenAI
         with open(temp_filename, "rb") as file:
@@ -26,13 +27,13 @@ def download_file(url):
             )
 
         file_id = upload_response.id
-        print(f"Uploaded file ID: {file_id}")
+        print(f"Uploaded file ID: {file_id}", file=sys.stderr)
 
     finally:
         # Delete the temporary file after upload
         if os.path.exists(temp_filename):
             os.remove(temp_filename)
-            print(f"Temporary file {temp_filename} deleted.")
+            print(f"Temporary file {temp_filename} deleted.", file=sys.stderr)
 
     # Return the file_id for further processing
     return pdf_summary(file_id)
@@ -48,12 +49,12 @@ def pdf_summary(file_id):
         model="gpt-4o-mini",
     )
     assistant_id = assistant.id
-    print(f"Assistant ID: {assistant_id}")
+    print(f"Assistant ID: {assistant_id}", file=sys.stderr)
 
     # Step 3: Create a new thread - (creating new conversation thread)
     thread = openai.beta.threads.create()
     thread_id = thread.id
-    print(f"Thread ID: {thread_id}")
+    print(f"Thread ID: {thread_id}", file=sys.stderr)
 
     # Step 4: Add a user message to the thread
     message = openai.beta.threads.messages.create(
@@ -73,7 +74,7 @@ def pdf_summary(file_id):
         assistant_id=assistant_id  #  Just reference the assistant
     )
 
-    print(f"Run ID: {run.id}")
+    print(f"Run ID: {run.id}", file=sys.stderr)
 
     #Step 6: Wait for the assistant to process the request
     while True:
@@ -89,7 +90,7 @@ def pdf_summary(file_id):
             return assistant_response
             
 
-        print("Waiting for response...")
+        print("Waiting for response...", file=sys.stderr)
         time.sleep(2)  # Prevent spamming the API
 
 

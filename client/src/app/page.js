@@ -1,11 +1,12 @@
 // src/app/page.js
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
   const [papers, setPapers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [showPapers, setShowPapers] = useState(false);
   const [topic, setTopic] = useState('ai');
@@ -21,19 +22,97 @@ export default function Home() {
     }
   };
   
+  // Poll for papers when processing is active
+  useEffect(() => {
+    let pollInterval;
+    
+    if (isProcessing && showPapers) {
+      // Set up polling interval (every 3 seconds)
+      pollInterval = setInterval(() => {
+        fetchLatestPapers();
+      }, 3000);
+    }
+    
+    // Clean up interval when component unmounts or dependencies change
+    return () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+    };
+  }, [isProcessing, showPapers]);
+  
+  // Function to fetch latest papers from database
+  const fetchLatestPapers = async () => {
+    try {
+      const response = await fetch('/api/retrieve-papers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Get new papers
+        const newPapers = data.papers || [];
+        
+        // Check if we have real updates (not just waiting messages)
+        const hasRealUpdates = newPapers.some(newPaper => {
+          // Find matching paper in current state
+          const existingPaper = papers.find(p => p.id === newPaper.id || p._id === newPaper._id);
+          
+          // If no existing paper or summary changed from waiting message
+          return !existingPaper || 
+            (newPaper.summary && 
+             newPaper.summary !== "Waiting for summary, thank you for your patience." &&
+             existingPaper.summary !== newPaper.summary);
+        });
+        
+        // Only update if we have real changes
+        if (hasRealUpdates || papers.length !== newPapers.length) {
+          console.log("Updating papers with new data");
+          setPapers(newPapers);
+        }
+        
+        // Check if processing is complete
+        const allHaveSummaries = newPapers.length > 0 && 
+          newPapers.every(paper => 
+            paper.summary && 
+            paper.summary.trim() !== "" && 
+            paper.summary !== "Waiting for summary, thank you for your patience."
+          );
+        
+        if (allHaveSummaries && newPapers.length >= 5) {
+          console.log("All papers have summaries, stopping polling");
+          setIsProcessing(false);
+        }
+      } else {
+        console.error('Error fetching latest papers:', data.error);
+      }
+    } catch (err) {
+      console.error('Error polling for papers:', err);
+    }
+  };
+  
   // Function to handle button click
   const handleRetrievePapers = async () => {
     setIsLoading(true);
     setError(null);
+    setPapers([]);  // Clear existing papers
     
     try {
-      // Call the API route with parameters (even though they're not used by main.py currently)
+      // Initial call to start processing
       const response = await fetch(`/api/retrieve-papers?topic=${encodeURIComponent(topic)}&timeFrame=${timeFrame}`);
       const data = await response.json();
       
       if (response.ok) {
-        setPapers(data.papers || []);
+        // Set processing flag to enable polling
+        setIsProcessing(true);
         setShowPapers(true);
+        
+        // Do initial fetch to get any papers that may already be in the database
+        await fetchLatestPapers();
       } else {
         setError(data.error || 'Failed to retrieve papers');
       }
@@ -48,6 +127,7 @@ export default function Home() {
   // Function to get back to search
   const handleBackToSearch = () => {
     setShowPapers(false);
+    setIsProcessing(false);  // Stop polling
   };
 
   return (
@@ -102,6 +182,12 @@ export default function Home() {
             Back to Search
           </button>
           
+          {isProcessing && (
+            <div className="processing-indicator">
+              <p>Retrieving and processing papers... Papers will appear as they are processed.</p>
+            </div>
+          )}
+          
           {papers.length > 0 ? (
             papers.map((paper, index) => (
               <div key={paper.id || paper._id || index} className="card">
@@ -112,7 +198,9 @@ export default function Home() {
                     {paper.date && <span className="date">{formatDate(paper.date)}</span>}
                   </div>
                 </div>
-                <p className="summary">{paper.summary || 'No summary available'}</p>
+                <p className="summary">
+                  {paper.summary || 'Summary is being generated...'}
+                </p>
                 {paper.tags && paper.tags.length > 0 && (
                   <div className="tags">
                     {paper.tags.map((tag, idx) => (
@@ -123,7 +211,9 @@ export default function Home() {
               </div>
             ))
           ) : (
-            <p className="no-results">No papers found in the database.</p>
+            <p className="no-results">
+              {isProcessing ? 'Retrieving papers...' : 'No papers found in the database.'}
+            </p>
           )}
         </div>
       )}

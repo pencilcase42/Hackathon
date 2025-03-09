@@ -26,14 +26,14 @@ class MongoJSONEncoder(json.JSONEncoder):
 def get_all_papers_from_db():
     """Retrieve all papers from MongoDB database"""
     try:
-        # Initialize database connection (this may print to stderr)
-        db = init_db(clear=False)
+        # Initialize database connection (minimize logs)
+        db = init_db(clear=False, verbose=False)
         
         # Make sure stdout is completely empty before writing our JSON
         sys.stdout.flush()
         
         # Fetch all papers from the database
-        papers = db.get_all_papers()
+        papers = db.get_all_papers(verbose=False)
         
         # Process papers to ensure they're JSON serializable
         processed_papers = []
@@ -48,29 +48,24 @@ def get_all_papers_from_db():
                     processed_paper[key] = value
             processed_papers.append(processed_paper)
         
-        # Debug info to stderr
-        sys.stderr.write(f"Retrieved and processed {len(processed_papers)} papers\n")
-        
-        # If no papers were found, return an empty array (not an error)
-        if not processed_papers:
-            sys.stderr.write("No papers found in the database\n")
-            print(json.dumps([]))
-            return []
+        # Only log the count if there are papers
+        if processed_papers:
+            sys.stderr.write(f"[DB_FETCH] Found {len(processed_papers)} papers\n")
         
         # Output the papers as JSON to stdout
-        print(json.dumps(processed_papers, cls=MongoJSONEncoder))
+        print(json.dumps(processed_papers, cls=MongoJSONEncoder), file=sys.stdout)
         return processed_papers
         
     except Exception as e:
         # If any error occurs, log it to stderr and return an error object to stdout
-        sys.stderr.write(f"Error retrieving papers: {str(e)}\n")
-        print(json.dumps({"error": str(e)}))
+        sys.stderr.write(f"[ERROR] Retrieving papers: {str(e)}\n")
+        print(json.dumps({"error": str(e)}), file=sys.stdout)
         sys.exit(1)
 
 if __name__ == "__main__":
     try:
         get_all_papers_from_db()
     except Exception as e:
-        sys.stderr.write(f"Fatal error: {str(e)}\n")
-        print(json.dumps({"error": str(e)}))
+        sys.stderr.write(f"[FATAL] {str(e)}\n")
+        print(json.dumps({"error": str(e)}), file=sys.stdout)
         sys.exit(1)

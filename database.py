@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
+import sys
 
 # Load the environment variables from the .env file
 load_dotenv()
@@ -11,11 +12,11 @@ class DB:
         self.uri = os.getenv("DB_URI", "mongodb://localhost:27017/")
         self.client = MongoClient(self.uri)
         self.db = self.client[self.db_name]
-        print(f"Connected to MongoDB database: '{self.db_name}' at URI: '{self.uri}'")
+        print(f"Connected to MongoDB database: '{self.db_name}' at URI: '{self.uri}'", file=sys.stderr)
 
     def clear_database(self):
         self.client.drop_database(self.db_name)
-        print(f"Database '{self.db_name}' has been cleared.")
+        print(f"Database '{self.db_name}' has been cleared.", file=sys.stderr)
 
 if __name__ == "__main__":
     # Initialize the database

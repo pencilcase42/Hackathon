@@ -232,3 +232,25 @@ html, body {
 .back-button:hover {
   background-color: #333;
 }
+
+.processing-indicator {
+  background-color: rgba(0, 112, 243, 0.1);
+  color: var(--color-primary);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1.5rem;
+  text-align: center;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
