@@ -8,26 +8,30 @@ import urllib.parse
 import feedparser
 
 
-def getPDFs(inputs=['latent diffusion models', 'reinforcement learning'], tags=[], time_frame=10, test=False):
+def getPDFs(params, test=False):
+    inputs, daterange, sortby, sortorder = params['keywords'], params['date_range'], params['sortBy'], params['sortOrder']
+    
+    
+    
     inputs = ['all:' + '+'.join(input.split(' ')) for input in inputs]
-    tags = ['cat:' + tag for tag in tags]
-    search_query = '%28' + '+AND+'.join(inputs + tags) + '%29'
+    search_query = '%28' + '+AND+'.join(inputs) + '%29'
+    start = 0
+    max_results = 10
 
-    today = datetime.datetime.today()
-    today_str = today.strftime('%Y%m%d%H%M')
-    search_start_date = today - timedelta(days=time_frame)
-    search_start_date_str = search_start_date.strftime('%Y%m%d') + '0000'
-    daterange = f'{search_start_date_str}+TO+{today_str}'
+    # today = datetime.datetime.today()
+    # today_str = today.strftime('%Y%m%d%H%M')
+    # search_start_date = today - timedelta(days=time_frame)
+    # search_start_date_str = search_start_date.strftime('%Y%m%d') + '0000'
+    # daterange = f'{search_start_date_str}+TO+{today_str}'
     
     base_url = 'http://export.arxiv.org/api/query?'
+
+    query_string = (
+    f"search_query={search_query}+AND+submittedDate:{daterange}"
+    f"&start={start}&max_results={max_results}&sortBy={sortby}&sortOrder={sortorder}"
+)
     
-    query_params = {
-        'search_query': f'{search_query}+AND+submittedDate:[{daterange}]',
-        'start': 0,
-        'max_results': 10
-    }
-    
-    full_url = f'{base_url}{urllib.parse.urlencode(query_params)}'
+    full_url = base_url + query_string 
 
     with libreq.urlopen(full_url) as url:
         r = url.read()
@@ -77,5 +81,12 @@ def getPDFs(inputs=['latent diffusion models', 'reinforcement learning'], tags=[
             if test:
                 print(f'Saved: {json_path}')
 
-# Run function in test mode
-getPDFs(test=True)
+
+# params = {
+#     "keywords": ["ai","machine+learning"],
+#     "date_range": "[202401010000+TO+202412312359]",
+#     "sortBy" : "relevance",
+#     "sortOrder" : "descending"
+# }
+
+# getPDFs(params,test=True)
