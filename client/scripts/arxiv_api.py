@@ -1,103 +1,81 @@
-import urllib, urllib.request
-import urllib.request as libreq
-from datetime import datetime,timedelta
-import feedparser
-import json
 import os
+import json
 import shutil
+import datetime
+from datetime import timedelta
+import urllib.request as libreq
+import urllib.parse
+import feedparser
 
 
-def getPDFs(keywords = ['ai'], tags = ['cs.SE'], time_frame = 10,test=False):
-    
-    keywords = ['all:' + word for word in keywords]
+def getPDFs(inputs=['latent diffusion models', 'reinforcement learning'], tags=[], time_frame=10, test=False):
+    inputs = ['all:' + '+'.join(input.split(' ')) for input in inputs]
     tags = ['cat:' + tag for tag in tags]
-    search_query = '%28' + '+OR+'.join(keywords + tags) + '%29'
-    #id_list = ''
-    start = 0
-    max_results = 10
+    search_query = '%28' + '+AND+'.join(inputs + tags) + '%29'
 
-    today = datetime.today()
+    today = datetime.datetime.today()
     today_str = today.strftime('%Y%m%d%H%M')
-    
     search_start_date = today - timedelta(days=time_frame)
     search_start_date_str = search_start_date.strftime('%Y%m%d') + '0000'
+    daterange = f'{search_start_date_str}+TO+{today_str}'
     
-    daterange = f"{search_start_date_str}+TO+{today_str}"
+    base_url = 'http://export.arxiv.org/api/query?'
     
-    with libreq.urlopen(f'http://export.arxiv.org/api/query?search_query={search_query}+AND+submittedDate:[{daterange}]&start={start}&max_results={max_results}') as url:
-      r = url.read()
+    query_params = {
+        'search_query': f'{search_query}+AND+submittedDate:[{daterange}]',
+        'start': 0,
+        'max_results': 10
+    }
+    
+    full_url = f'{base_url}{urllib.parse.urlencode(query_params)}'
+
+    with libreq.urlopen(full_url) as url:
+        r = url.read()
     feed = feedparser.parse(r)
 
     if test:
-        # Print out feed information
-        print(f'Feed title: {feed.feed.title}')
-        print(f'Feed last updated: {feed.feed.updated}')
-
-        # Print OpenSearch metadata
-        print(f'totalResults for this query: {feed.feed.opensearch_totalresults}')
-        print(f'itemsPerPage for this query: {feed.feed.opensearch_itemsperpage}')
-        print(f'startIndex for this query: {feed.feed.opensearch_startindex}')
+        print(f'Feed title: {feed.feed.get("title", "No Title")}')
+        print(f'Feed last updated: {feed.feed.get("updated", "Unknown")}')
+        print(f'Total results: {feed.feed.get("opensearch_totalresults", "Unknown")}')
+        print(f'Items per page: {feed.feed.get("opensearch_itemsperpage", "Unknown")}')
+        print(f'Start index: {feed.feed.get("opensearch_startindex", "Unknown")}')
+    
     
     folder = 'outputs'
     if os.path.exists(folder):
-        shutil.rmtree(folder)  # Deletes the entire folder and its contents
-        os.makedirs(folder, exist_ok=True)  # Recreate the empty folder
-    
-    # Run through each entry and print out information
+        shutil.rmtree(folder)  # Deletes existing folder
+    os.makedirs(folder, exist_ok=True)  # Creates a new empty folder
+
+   
     for entry in feed.entries:
         output = {
-        'arxiv_id':'',
-        'published':'',
-        'title':'',
-        'authors':'',
-        'abs_link':'',
-        'pdf_link':'',
-        'journal_ref':'',
-        'primary_Category':'',
-        'all_Categories':'',
-        'abstract':''
-    }
-        
-        output['arxiv_id'] = entry.id.split("/abs/")[-1]
-        output['published'] = entry.published
-        output['title'] = entry.title
-        
-        try:
-            output['authors'] = ", ".join(author.name for author in entry.authors)
-        except AttributeError:
-            pass
+            'arxiv_id': entry.id.split('/abs/')[-1],
+            'published': entry.published,
+            'title': entry.title,
+            'authors': ', '.join(author.name for author in getattr(entry, 'authors', [])),
+            'abs_link': '',
+            'pdf_link': '',
+            'journal_ref': getattr(entry, 'arxiv_journal_ref', 'No journal ref found'),
+            'primary_Category': '',
+            'all_Categories': '',
+            'abstract': entry.summary
+        }
 
-        # Get the links to the abs page and PDF for this e-print
-        # add doi later if we include articles outside arxiv
         for link in entry.links:
             if link.rel == 'alternate':
                 output['abs_link'] = link.href
-            elif link.title == 'pdf':
+            elif link.get('title') == 'pdf':
                 output['pdf_link'] = link.href
-        
-        # The journal reference, comments, and primary_category sections live under the arxiv namespace
-        try:
-            journal_ref = entry.arxiv_journal_ref
-        except AttributeError:
-            journal_ref = 'No journal ref found'
-        output['journal_ref'] = journal_ref
-        
-        
-        # Primary category (dirty hack to get it)
-        output['primary_Category'] = entry.tags[0]["term"]
-        
-        # Get all categories
-        all_categories = [t['term'] for t in entry.tags]
-        output['all_Categories'] = ", ".join(all_categories)
-        
-        # The abstract is in the <summary> element
-        output['abstract'] = entry.summary
-        
-        with open(f"{folder}\{output['arxiv_id']}.json", "w") as outfile:
+
+        if hasattr(entry, 'tags') and entry.tags:
+            output['primary_Category'] = entry.tags[0]['term']
+            output['all_Categories'] = ', '.join(t['term'] for t in entry.tags)
+
+        json_path = os.path.join(folder, f'{output["arxiv_id"]}.json')
+        with open(json_path, 'w') as outfile:
             json.dump(output, outfile, indent=4)
             if test:
-                print("saved")
+                print(f'Saved: {json_path}')
 
+# Run function in test mode
 getPDFs(test=True)
-
-
