@@ -138,30 +138,6 @@ export default function NewsPage() {
         <div className="empty-state">
           <p>No papers are currently displayed.</p>
           
-          <div className="search-controls">
-            <div className="input-group">
-              <label htmlFor="topic">Topic:</label>
-              <input 
-                type="text" 
-                id="topic" 
-                value={topic} 
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="e.g., artificial intelligence"
-              />
-            </div>
-            
-            <div className="input-group">
-              <label htmlFor="timeFrame">Time Frame (days):</label>
-              <input 
-                type="number" 
-                id="timeFrame" 
-                value={timeFrame} 
-                onChange={(e) => setTimeFrame(e.target.value)}
-                min="1" 
-                max="365"
-              />
-            </div>
-          </div>
           
           <button 
             className="retrieve-button"
@@ -179,7 +155,7 @@ export default function NewsPage() {
             className="back-button"
             onClick={handleBackToSearch}
           >
-            Back to Search
+            Back to News
           </button>
           
           {isProcessing && (
