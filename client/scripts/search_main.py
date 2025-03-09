@@ -10,11 +10,7 @@ import urllib.parse
 import feedparser
 
 
-def getPDFs(params, test=False):
-    inputs, daterange, sortby, sortorder = params['keywords'], params['date_range'], params['sortBy'], params['sortOrder']
-    
-    
-    
+def getPDFs(inputs, daterange, sortby = 'relevance', sortorder = 'descending', test=False):
     inputs = ['all:' + '+'.join(input.split(' ')) for input in inputs]
     search_query = '%28' + '+AND+'.join(inputs) + '%29'
     start = 0
@@ -46,12 +42,7 @@ def getPDFs(params, test=False):
         print(f'Items per page: {feed.feed.get("opensearch_itemsperpage", "Unknown")}')
         print(f'Start index: {feed.feed.get("opensearch_startindex", "Unknown")}')
     
-    
-    folder = 'outputs'
-    if os.path.exists(folder):
-        shutil.rmtree(folder)  # Deletes existing folder
-    os.makedirs(folder, exist_ok=True)  # Creates a new empty folder
-
+    papers = []
    
     for entry in feed.entries:
         output = {
@@ -77,11 +68,8 @@ def getPDFs(params, test=False):
             output['primary_Category'] = entry.tags[0]['term']
             output['all_Categories'] = ', '.join(t['term'] for t in entry.tags)
 
-        json_path = os.path.join(folder, f'{output["arxiv_id"]}.json')
-        with open(json_path, 'w') as outfile:
-            json.dump(output, outfile, indent=4)
-            if test:
-                print(f'Saved: {json_path}')
+        papers.append(output)
+    return papers
 
 def create_arxiv_query_prompt(user_input_query): # UPDATE WITH CHANGES
     prompt_text = f"""
@@ -160,7 +148,5 @@ try:
 except Exception as e:
     print(f"Error calling OpenAI API: {e}", file=sys.stderr)
 
-getPDFs(params=output)
-
-
+getPDFs(inputs = output['keywords'], daterange = output['date_range'])
 
