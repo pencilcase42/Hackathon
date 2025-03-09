@@ -3,17 +3,9 @@ import json
 import os
 import sys
 
-# Check for OpenAI API key in environment variables
 api_key = os.getenv("OPENAI_API_KEY")
 
-if not api_key:
-    # If not in environment, print a helpful error message to stderr
-    print("Error: OPENAI_API_KEY environment variable not set.", file=sys.stderr)
-    print("Please set the OPENAI_API_KEY environment variable or modify the script to include your API key.", file=sys.stderr)
-    client = None
-else:
-    # Initialize the OpenAI client with the API key
-    client = openai.OpenAI(api_key=api_key)
+client = openai.OpenAI(api_key=api_key)
 
 def create_arxiv_query_prompt(user_query):
     prompt_text = f"""
@@ -77,7 +69,6 @@ Example output (do not include comments in your actual response):
     }
 
 if __name__ == "__main__":
-    # Check if OpenAI client is properly initialized
     if client is None:
         print("Error: OpenAI client not initialized. Please set OPENAI_API_KEY environment variable.", file=sys.stderr)
         sys.exit(1)
@@ -86,10 +77,8 @@ if __name__ == "__main__":
     prompt_data = create_arxiv_query_prompt(user_query)
 
     try:
-        # Call the OpenAI API
         response = client.chat.completions.create(**prompt_data)
 
-        # Extract and parse the output
         output = json.loads(response.choices[0].message.content)
         print("Extracted Keywords:", output["keywords"])
         print("Date Range:", output["date"])
